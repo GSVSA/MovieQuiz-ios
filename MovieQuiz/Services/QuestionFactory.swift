@@ -60,6 +60,16 @@ final class QuestionFactory: QuestionFactoryProtocol {
         }
     }
     
+    private func createQuestion(image: Data, rating: Float) -> QuizQuestion {
+        let testRating = Float((70...90).randomElement() ?? 80) / 10
+        let text = "Рейтинг этого фильма больше чем \(testRating)?"
+        let correctAnswer = rating > testRating
+        
+        return QuizQuestion(image: image,
+                            text: text,
+                            correctAnswer: correctAnswer)
+    }
+    
     func requestNextQuestion() {
         DispatchQueue.global().async { [weak self] in
             guard let self = self else { return }
@@ -76,13 +86,7 @@ final class QuestionFactory: QuestionFactoryProtocol {
             }
 
             let rating = Float(movie.rating) ?? 0
-
-            let text = "Рейтинг этого фильма больше чем 7?"
-            let correctAnswer = rating > 7
-
-            let question = QuizQuestion(image: imageData,
-                                         text: text,
-                                         correctAnswer: correctAnswer)
+            let question = createQuestion(image: imageData, rating: rating)
 
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
