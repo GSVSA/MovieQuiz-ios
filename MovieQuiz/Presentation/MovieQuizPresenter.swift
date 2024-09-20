@@ -1,14 +1,16 @@
 import UIKit
 
 final class MovieQuizPresenter: QuestionFactoryDelegate {
-    private let statisticService: StatisticServiceProtocol!
+    var correctAnswers = 0
+    var currentQuestion: QuizQuestion?
+    
+    private let statisticService: StatisticServiceProtocol
     private weak var viewController: MovieQuizViewControllerProtocol?
     private var questionFactory: QuestionFactoryProtocol?
     
     private let questionsAmount: Int = 10
-    private var currentQuestionIndex = 0 // Индекс текущего вопроса
-    var correctAnswers = 0 // Количество правильных ответов
-    var currentQuestion: QuizQuestion?
+    private var currentQuestionIndex = 0
+
     
     init(viewController: MovieQuizViewControllerProtocol) {
         self.viewController = viewController
@@ -20,21 +22,11 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         viewController.showLoadingIndicator()
     }
     
-    private func isLastQuestion() -> Bool {
-        currentQuestionIndex == questionsAmount - 1
-    }
-    
     func restartGame() {
             currentQuestionIndex = 0
             correctAnswers = 0
             questionFactory?.requestNextQuestion()
-        }
-    
-    private func switchToNextQuestion() {
-        currentQuestionIndex += 1
     }
-    
-    // MARK: - Actions
     
     func yesButtonClicked() {
         checkAnswer(true)
@@ -44,13 +36,6 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         checkAnswer(false)
     }
     
-    // Проверка ответа
-    private func checkAnswer(_ answer: Bool) {
-        let correctAnswer = currentQuestion?.correctAnswer
-        showAnswerResult(isCorrect: correctAnswer == answer)
-    }
-    
-    // Конвертирование формата вопроса в UI-модель
     func convert(model: QuizQuestion) -> QuizStepViewModel {
         let questionStep = QuizStepViewModel.init(
             image: UIImage(data: model.image) ?? UIImage(),
@@ -59,46 +44,6 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
         )
         
         return questionStep
-    }
-    
-    // Отображение результата проверки ответа
-    private func showAnswerResult(isCorrect: Bool) {
-        viewController?.highlightImageBorder(isCorrectAnswer: isCorrect)
-        
-        if isCorrect {
-            correctAnswers += 1
-        }
-           
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            guard let self = self else { return }
-            self.showNextQuestionOrResults()
-        }
-    }
-    
-    // Показать следующий вопрос или результат
-    private func showNextQuestionOrResults() {
-        if self.isLastQuestion() {
-            statisticService.store(correct: correctAnswers, total: questionsAmount)
-            
-            let currentResult = "Ваш результат: \(correctAnswers)/\(questionsAmount)"
-            let gamesCountMessage = "Количество сыгранных квизов: \(statisticService.gamesCount)"
-            let bestGameCorrectCountMessage = "\(statisticService.bestGame.correct)"
-            let bestGameTotalMessage = "\(statisticService.bestGame.total)"
-            let bestGameDateMessage = "\(statisticService.bestGame.date.formatted())"
-            let bestGameMessage = "Рекорд: \(bestGameCorrectCountMessage)/\(bestGameTotalMessage) (\(bestGameDateMessage))"
-            let totalAccuracyMessage = "Средняя точность: \(String(format: "%.2f", statisticService.totalAccuracy))%"
-            
-            let message = "\(currentResult)\n\(gamesCountMessage)\n\(bestGameMessage)\n\(totalAccuracyMessage)"
-            
-            viewController?.show(quiz: QuizResultsViewModel(
-                title: "Этот раунд окончен!",
-                text: message,
-                buttonText: "Сыграть ещё раз")
-            )
-        } else {
-            self.switchToNextQuestion()
-            questionFactory?.requestNextQuestion()
-        }
     }
     
     // MARK: - QuestionFactoryDelegate
@@ -122,6 +67,59 @@ final class MovieQuizPresenter: QuestionFactoryDelegate {
     }
 
     func didFailToLoadData(with error: Error) {
-        viewController?.showNetworkError(message: error.localizedDescription) // возьмём в качестве сообщения описание ошибки
+        viewController?.showNetworkError(message: error.localizedDescription)
+    }
+    
+    // MARK: - Private functions
+    
+    private func switchToNextQuestion() {
+        currentQuestionIndex += 1
+    }
+    
+    private func isLastQuestion() -> Bool {
+        currentQuestionIndex == questionsAmount - 1
+    }
+    
+    private func checkAnswer(_ answer: Bool) {
+        let correctAnswer = currentQuestion?.correctAnswer
+        showAnswerResult(isCorrect: correctAnswer == answer)
+    }
+    
+    private func showAnswerResult(isCorrect: Bool) {
+        viewController?.highlightImageBorder(isCorrectAnswer: isCorrect)
+        
+        if isCorrect {
+            correctAnswers += 1
+        }
+           
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            guard let self = self else { return }
+            self.showNextQuestionOrResults()
+        }
+    }
+    
+    private func showNextQuestionOrResults() {
+        if self.isLastQuestion() {
+            statisticService.store(correct: correctAnswers, total: questionsAmount)
+            
+            let currentResult = "Ваш результат: \(correctAnswers)/\(questionsAmount)"
+            let gamesCountMessage = "Количество сыгранных квизов: \(statisticService.gamesCount)"
+            let bestGameCorrectCountMessage = "\(statisticService.bestGame.correct)"
+            let bestGameTotalMessage = "\(statisticService.bestGame.total)"
+            let bestGameDateMessage = "\(statisticService.bestGame.date.formatted())"
+            let bestGameMessage = "Рекорд: \(bestGameCorrectCountMessage)/\(bestGameTotalMessage) (\(bestGameDateMessage))"
+            let totalAccuracyMessage = "Средняя точность: \(String(format: "%.2f", statisticService.totalAccuracy))%"
+            
+            let message = "\(currentResult)\n\(gamesCountMessage)\n\(bestGameMessage)\n\(totalAccuracyMessage)"
+            
+            viewController?.show(quiz: QuizResultsViewModel(
+                title: "Этот раунд окончен!",
+                text: message,
+                buttonText: "Сыграть ещё раз")
+            )
+        } else {
+            self.switchToNextQuestion()
+            questionFactory?.requestNextQuestion()
+        }
     }
 }

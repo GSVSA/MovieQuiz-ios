@@ -2,25 +2,14 @@ import UIKit
 
 final class MovieQuizViewController: UIViewController, MovieQuizViewControllerProtocol {
     // MARK: - Lifecycle
+    private var presenter: MovieQuizPresenter!
+    
     @IBOutlet private weak var imageView: UIImageView!
     @IBOutlet private weak var textLabel: UILabel!
     @IBOutlet private weak var yesButton: UIButton!
     @IBOutlet private weak var noButton: UIButton!
     @IBOutlet private weak var counterLabel: UILabel!
     @IBOutlet private weak var activityIndicator: UIActivityIndicatorView!
-
-    private var presenter: MovieQuizPresenter!
-    
-    // MARK: - Lifecycle
-    private func initViewAttributes() {
-        imageView.layer.cornerRadius = 20
-        yesButton.layer.cornerRadius = 15
-        noButton.layer.cornerRadius = 15
-        yesButton.titleLabel?.font = UIFont(name: "YS Display Medium", size: 20)
-        noButton.titleLabel?.font = UIFont(name: "YS Display Medium", size: 20)
-        counterLabel.font = UIFont(name: "YS Display Medium", size: 20)
-        textLabel.font = UIFont(name: "YS Display Bold", size: 23)
-    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -30,8 +19,8 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
     }
     
     func showLoadingIndicator() {
-        activityIndicator.isHidden = false // говорим, что индикатор загрузки не скрыт
-        activityIndicator.startAnimating() // включаем анимацию
+        activityIndicator.isHidden = false
+        activityIndicator.startAnimating()
     }
     
     func hideLoadingIndicator() {
@@ -40,7 +29,7 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
     }
     
     func showNetworkError(message: String) {
-        hideLoadingIndicator() // скрываем индикатор загрузки
+        hideLoadingIndicator()
         
         let alertModel = AlertModel(
             title: "Ошибка",
@@ -56,21 +45,8 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
         presenter.present()
     }
     
-    // MARK: - Actions
+    // MARK: - Functions
     
-    @IBAction private func yesButtonClicked(_ sender: Any) {
-        presenter.currentQuestion = presenter.currentQuestion
-        presenter.yesButtonClicked()
-    }
-    
-    @IBAction private func noButtonClicked(_ sender: Any) {
-        presenter.currentQuestion = presenter.currentQuestion
-        presenter.noButtonClicked()
-    }
-    
-    // MARK: - functions
-    
-    // Показать квиз
     func show(quiz step: QuizStepViewModel) {
         imageView.image = step.image
         textLabel.text = step.question
@@ -81,7 +57,6 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
         noButton.isEnabled = true
     }
     
-    // Показать алерт
     func show(quiz result: QuizResultsViewModel) {
         let alertModel = AlertModel(
             title: result.title,
@@ -98,7 +73,6 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
         presenter.present()
     }
     
-    // Отображение результата проверки ответа
     func highlightImageBorder(isCorrectAnswer: Bool) {
         imageView.layer.masksToBounds = true
         imageView.layer.borderWidth = 8
@@ -106,9 +80,33 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
         yesButton.isEnabled = false
         noButton.isEnabled = false
     }
+    
+    // MARK: - Actions
+    
+    @IBAction private func yesButtonClicked(_ sender: Any) {
+        presenter.currentQuestion = presenter.currentQuestion
+        presenter.yesButtonClicked()
+    }
+    
+    @IBAction private func noButtonClicked(_ sender: Any) {
+        presenter.currentQuestion = presenter.currentQuestion
+        presenter.noButtonClicked()
+    }
+    
+    // MARK: - Attributes
+    
+    private func initViewAttributes() {
+        imageView.layer.cornerRadius = 20
+        yesButton.layer.cornerRadius = 15
+        noButton.layer.cornerRadius = 15
+        yesButton.titleLabel?.font = UIFont(name: "YS Display Medium", size: 20)
+        noButton.titleLabel?.font = UIFont(name: "YS Display Medium", size: 20)
+        counterLabel.font = UIFont(name: "YS Display Medium", size: 20)
+        textLabel.font = UIFont(name: "YS Display Bold", size: 23)
+    }
 }
 
-// MARK: - extension
+// MARK: - Extension
 
 extension MovieQuizViewController: AlertDelegate {
     func didReceiveAlert(alert: UIAlertController?) {
